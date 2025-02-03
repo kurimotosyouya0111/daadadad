@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>問題ページ</title>
+    <style>
+        /*答えを入力のとこ */
+        #answerInput {
+            font-size: 30px;
+        }
+
+        /*~~の問題です*/
+        #prefectureName {
+            font-size: 30px;
+        }
+
+
+        #monndai {
+            font-size: 30px;
+        }
+
+        #puzzle {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            background-color: gray;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            background-size: 300px 300px;
+            /* 画像を3x3のサイズに */
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        /*背景画像 */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('7.gif');
+            /* ここに画像のURLを挿入 */
+            background-size: cover;
+            /* 画像が画面いっぱいに広がります */
+            background-position: center;
+            /* 画像の位置を中央に */
+        }
+
+        #prefectureName,
+        #questionContainer,
+        #puzzle,
+        button {
+            margin: 10px 0;
+            text-align: center;
+            font-size: 30px;
+        }
+
+        /*mapの表示 */
+        #map {
+            width: 600px;
+            height: 400px;
+            border: 1px solid #000;
+            margin: 20px 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            /* 地図の背景を薄く白に */
+        }
+
+        /*ボタン*/
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #fff;
+            /* ボタンの背景色 */
+            border: 3px solid #000;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /*カーソル合したら変わる色 */
+        button:hover {
+            background-color: #f0f0f0;
+            /* ホバー時の背景色 */
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>問題ページ</h1>
+    <p id="prefectureName"></p>
+
+    <!-- 問題の表示エリア -->
+    <div id="questionContainer"></div>
+
+    <!-- パズルのピース表示 -->
+    <div id="puzzle"></div>
+
+
+
+    <button id="gotoPuzzle">パズルに進む</button>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const prefecture = urlParams.get('prefecture');
+        const imageUrl = urlParams.get('image');
+        const questionsByPrefecture = {
+
+            "北海道": [
+                { "question": "北海道で人気の食べ物「いくら」は何の魚の卵？", "answer": "サケ" },
+                { "question": "北海道の冬に有名な観光地はどこですか？", "answer": "札幌雪まつり" },
+                { "question": "北海道で一番高い山は何ですか？", "answer": "大雪山" },
+                { "question": "北海道名のラーメンでラーメンといえば何の味が有名ですか？", "answer": "味噌" },
+                { "question": "北海道の名産品「ジンギスカン」とは何の肉を使った料理ですか？", "answer": "羊肉" },
+                { "question": "北海道の代表的なスポーツは何ですか？", "answer": "アイスホッケー" },
+                { "question": "北海道に多い動物は何ですか？", "answer": "シカ" },
+                { "question": "北海道の特産物で有名な魚は何ですか？", "answer": "サケ" },
+                { "question": "北海道の主要な農作物は何ですか？", "answer": "小麦" }
+            ],
+            "青森県": [
+                { "question": "青森県の名物は何ですか？", "answer": "リンゴ" },
+                { "question": "青森県の観光名所で有名な場所はどこですか？", "answer": "青森ねぶた祭り" },
+                { "question": "青森県の特産品は何ですか？", "answer": "ホタテ" },
+                { "question": "青森県の県庁所在地はどこですか？", "answer": "青森市" },
+                { "question": "青森県で見られる幻想的な冬の自然現象は？", "answer": "オーロラ" },
+                { "question": "青森県にはどんな動物が多く生息していますか？", "answer": "クマ" },
+                { "question": "青森県にある湖は何ですか？", "answer": "十和田湖" },
+                { "question": "青森県の有名な伝統芸能は何ですか？", "answer": "ねぶた" },
+                { "question": "青森県の代表的な食べ物は何ですか？", "answer": "しじみ" }
+            ],
+            "岩手県": [
+                { "question": "岩手県の名物は何ですか？", "answer": "わんこそば" },
+                { "question": "岩手県の観光名所はどこですか？", "answer": "中尊寺金色堂" },
+                { "question": "岩手県の県庁所在地はどこですか？", "answer": "盛岡市" },
+                { "question": "岩手県の有名な山は何ですか？", "answer": "岩手山" },
+                { "question": "岩手県で有名な温泉地はどこですか？", "answer": "花巻温泉" },
+                { "question": "岩手県の特産品は何ですか？", "answer": "南部せんべい" },
+                { "question": "岩手県の有名な祭りは何ですか？", "answer": "盛岡さんさ踊り" },
+                { "question": "岩手県の有名な湖はどこですか？", "answer": "遠野湖" },
+                { "question": "岩手県の主要な農産物は何ですか？", "answer": "米" }
+            ],
+            "宮城県": [
+                { "question": "宮城県の名物は何ですか？", "answer": "牛タン" },
+                { "question": "宮城県の観光名所はどこですか？", "answer": "松島" },
+                { "question": "宮城県の県庁所在地はどこですか？", "answer": "仙台市" },
+                { "question": "宮城県の有名な祭りは何ですか？", "answer": "仙台七夕まつり" },
+                { "question": "宮城県の特産品は何ですか？", "answer": "牡蠣" },
+                { "question": "宮城県の有名な山は何ですか？", "answer": "蔵王山" },
+                { "question": "宮城県の名物「笹かまぼこ」の材料として主に使われる魚は？", "answer": "白身魚" },
+                { "question": "宮城県を舞台としているスポーツアニメは？", "answer": "ハイキュー" },
+                { "question": "宮城県の名物スイーツは何ですか？", "answer": "ずんだ餅" }
+            ],
+            "秋田県": [
+                { "question": "秋田県の名物は何ですか？", "answer": "きりたんぽ" },
+                { "question": "秋田県の郷土料理「しょっつる鍋」に使われる調味料「しょっつる」は何から作られますか？", "answer": "魚" },
+                { "question": "秋田県の県庁所在地はどこですか？", "answer": "秋田市" },
+                { "question": "秋田県の有名な温泉地はどこですか？", "answer": "乳頭温泉" },
+                { "question": "秋田県の特産品は何ですか？", "answer": "稲庭うどん" },
+                { "question": "秋田県で有名な祭りは何ですか？", "answer": "秋田竿燈まつり" },
+                { "question": "秋田県の伝統工芸品「樺細工」は、何の木を使って作られる？", "answer": "桜" },
+                { "question": "秋田県の名物お酒は何ですか？", "answer": "秋田美人" },
+                { "question": "秋田県の特産果物は何ですか？", "answer": "あきたこまち" }
+            ],
+
+            "山形県": [
+                { "question": "山形県の名物は何ですか？", "answer": "さくらんぼ" },
+                { "question": "山形県の観光名所で有名な場所はどこですか？", "answer": "山寺" },
+                { "question": "山形県の県庁所在地はどこですか？", "answer": "山形市" },
+                { "question": "山形県の有名な温泉地はどこですか？", "answer": "蔵王温泉" },
+                { "question": "山形県の特産品は何ですか？", "answer": "米沢牛" },
+                { "question": "山形県の名物お酒は何ですか？", "answer": "山形の酒" },
+                { "question": "山形県で有名な山は何ですか？", "answer": "蔵王山" },
+                { "question": "山形県の有名な祭りは何ですか？", "answer": "山形花笠まつり" },
+                { "question": "山形県で有名な果物は何ですか？", "answer": "ラ・フランス" }
+            ],
+            "福島県": [
+                { "question": "福島県の名物は何ですか？", "answer": "喜多方ラーメン" },
+                { "question": "福島県の観光名所はどこですか？", "answer": "大内宿" },
+                { "question": "福島県の県庁所在地はどこですか？", "answer": "福島市" },
+                { "question": "福島県の名産『赤べこ』の特徴的な色は何ですか？", "answer": "赤" },
+                { "question": "福島県の特産品は何ですか？", "answer": "桃" },
+                { "question": "福島県の有名な山は何ですか？", "answer": "磐梯山" },
+                { "question": "福島県で有名な祭りは何ですか？", "answer": "福島わらじまつり" },
+                { "question": "福島県の名産お酒は何ですか？", "answer": "会津の酒" },
+                { "question": "福島県の特産果物は何ですか？", "answer": "桃" }
+            ],
+            "茨城県": [
+                { "question": "茨城県の名物は何ですか？", "answer": "納豆" },
+                { "question": "茨城県で有名な大仏といえば？", "answer": "牛久大仏" },
+                { "question": "茨城県の県庁所在地はどこですか？", "answer": "水戸市" },
+                { "question": "茨城県の有名な温泉地はどこですか？", "answer": "大洗温泉" },
+                { "question": "茨城県の特産品は何ですか？", "answer": "メロン" },
+                { "question": "茨城県で有名な祭りは何ですか？", "answer": "水戸黄門まつり" },
+                { "question": "茨城県の有名な山は何ですか？", "answer": "筑波山" },
+                { "question": "茨城県の名産果物は何ですか？", "answer": "いちご" },
+                { "question": "茨城県の名物お菓子は何ですか？", "answer": "水戸納豆" }
+            ],
+            "栃木県": [
+                { "question": "栃木県の名物は何ですか？", "answer": "餃子" },
+                { "question": "栃木県の観光名所はどこですか？", "answer": "日光東照宮" },
+                { "question": "栃木県の県庁所在地はどこですか？", "answer": "宇都宮市" },
+                { "question": "栃木県の有名な温泉地はどこですか？", "answer": "鬼怒川温泉" },
+                { "question": "栃木県の特産品は何ですか？", "answer": "いちご" },
+                { "question": "栃木県にある有名な滝といえば？", "answer": "華厳の滝" },
+                { "question": "栃木県で有名な祭りは何ですか？", "answer": "宇都宮餃子祭り" },
+                { "question": "栃木県の名産お酒は何ですか？", "answer": "栃木の酒" },
+                { "question": "栃木県の名物スイーツは何ですか？", "answer": "いちご大福" }
+            ],
+            "群馬県": [
+                { "question": "群馬県の名物は何ですか？", "answer": "温泉まんじゅう" },
+                { "question": "群馬県の観光名所はどこですか？", "answer": "草津温泉" },
+                { "question": "群馬県の県庁所在地はどこですか？", "answer": "前橋市" },
+                { "question": "群馬県の有名な温泉地はどこですか？", "answer": "草津温泉" },
+                { "question": "群馬県の特産品は何ですか？", "answer": "下仁田ネギ" },
+                { "question": "群馬県の有名な山は何ですか？", "answer": "赤城山" },
+                { "question": "群馬県で有名な祭りは何ですか？", "answer": "高崎だるま市" },
+                { "question": "群馬県の名産お酒は何ですか？", "answer": "群馬の酒" },
+                { "question": "群馬県の名物スイーツは何ですか？", "answer": "こんにゃくゼリー" }
+            ],
+            "埼玉県": [
+                { "question": "埼玉県の名物は何ですか？", "answer": "草加せんべい" },
+                { "question": "埼玉県の観光名所はどこですか？", "answer": "川越" },
+                { "question": "埼玉県の県庁所在地はどこですか？", "answer": "さいたま市" },
+                { "question": "埼玉県の有名な山は何ですか？", "answer": "武甲山" },
+                { "question": "埼玉県で有名な祭りは何ですか？", "answer": "川越まつり" },
+                { "question": "埼玉県の特産品は何ですか？", "answer": "深谷ねぎ" },
+                { "question": "埼玉県の名産お酒は何ですか？", "answer": "秩父の酒" },
+                { "question": "埼玉県の名物スイーツは何ですか？", "answer": "さいたまんじゅう" },
+                { "question": "埼玉県の観光地で有名な場所はどこですか？", "answer": "長瀞" }
+            ],
+            "千葉県": [
+                { "question": "千葉県の名物は何ですか？", "answer": "落花生" },
+                { "question": "千葉県の観光名所はどこですか？", "answer": "東京ディズニーランド" },
+                { "question": "千葉県の県庁所在地はどこですか？", "answer": "千葉市" },
+                { "question": "千葉県の有名な温泉地はどこですか？", "answer": "鴨川温泉" },
+                { "question": "千葉県の特産品は何ですか？", "answer": "梨" },
+                { "question": "千葉県の有名な山は何ですか？", "answer": "鋸山" },
+                { "question": "千葉県で有名な祭りは何ですか？", "answer": "成田山新勝寺大祭" },
+                { "question": "千葉県の名産お酒は何ですか？", "answer": "千葉の酒" },
+                { "question": "千葉県の名物スイーツは何ですか？", "answer": "柏餅" }
+            ],
+            "東京都": [
+                { "question": "東京都の観光名所はどこですか？", "answer": "東京タワー" },
+                { "question": "東京都の県庁所在地はどこですか？", "answer": "新宿区" },
+                { "question": "東京都の名物は何ですか？", "answer": "深川めし" },
+                { "question": "東京都の有名な祭りは何ですか？", "answer": "東京大神宮の大祭" },
+                { "question": "東京都の特産品は何ですか？", "answer": "東京ばな奈" },
+                { "question": "東京都の名産お酒は何ですか？", "answer": "東京の酒" },
+                { "question": "東京都で有名な山は何ですか？", "answer": "高尾山" },
+                { "question": "東京都の名物スイーツは何ですか？", "answer": "雷おこし" },
+                { "question": "東京都の主要な駅はどこですか？", "answer": "東京駅" }
+            ],
+            "神奈川県": [
+                { "question": "神奈川県の観光名所はどこですか？", "answer": "横浜ランドマークタワー" },
+                { "question": "神奈川県の名物は何ですか？", "answer": "シュウマイ" },
+                { "question": "神奈川県の県庁所在地はどこですか？", "answer": "横浜市" },
+                { "question": "神奈川県の特産品は何ですか？", "answer": "鎌倉野菜" },
+                { "question": "神奈川県で有名な温泉地はどこですか？", "answer": "箱根温泉" },
+                { "question": "神奈川県の名産お酒は何ですか？", "answer": "横浜ビール" },
+                { "question": "神奈川県で有名な山は何ですか？", "answer": "丹沢山" },
+                { "question": "神奈川県の名物スイーツは何ですか？", "answer": "横浜フルーツサンド" },
+                { "question": "神奈川県で有名な祭りは何ですか？", "answer": "湘南ひらつか七夕祭り" }
+            ],
+
+            "新潟県": [
+                { "question": "新潟県の名物は何ですか？", "answer": "コシヒカリ" },
+                { "question": "新潟県の観光名所はどこですか？", "answer": "佐渡島" },
+                { "question": "新潟県の県庁所在地はどこですか？", "answer": "新潟市" },
+                { "question": "新潟県にある「佐渡島（さどがしま）」で有名な鳥は？", "answer": "トキ" },
+                { "question": "新潟県の特産品は何ですか？", "answer": "新潟酒" },
+                { "question": "新潟県の名物お酒は何ですか？", "answer": "越後の酒" },
+                { "question": "新潟県で有名な温泉地はどこですか？", "answer": "湯沢温泉" },
+                { "question": "新潟県の名産果物は何ですか？", "answer": "柿" },
+                { "question": "新潟県の有名な祭りは何ですか？", "answer": "長岡花火大会" }
+            ],
+            "富山県": [
+                { "question": "富山県の名物は何ですか？", "answer": "ブラックラーメン" },
+                { "question": "富山県の観光名所はどこですか？", "answer": "立山黒部アルペンルート" },
+                { "question": "富山県の県庁所在地はどこですか？", "answer": "富山市" },
+                { "question": "富山県で有名な温泉地はどこですか？", "answer": "宇奈月温泉" },
+                { "question": "富山県の特産品は何ですか？", "answer": "白エビ" },
+                { "question": "富山県の名産果物は何ですか？", "answer": "ぶどう" },
+                { "question": "富山県で有名な祭りは何ですか？", "answer": "富山灯篭祭り" },
+                { "question": "富山県の名物お酒は何ですか？", "answer": "富山の酒" },
+                { "question": "富山県の名産「富山湾の宝石」と呼ばれるのは、何ですか？", "answer": "ホタルイカ" }
+            ],
+            "石川県": [
+                { "question": "石川県の名物は何ですか？", "answer": "加賀料理" },
+                { "question": "石川県の観光名所はどこですか？", "answer": "金沢" },
+                { "question": "石川県の県庁所在地はどこですか？", "answer": "金沢市" },
+                { "question": "石川県の名前「加賀百万石」と言えば、どの時代のことを聞きますか？", "answer": "戦国時代" },
+                { "question": "石川県の特産品は何ですか？", "answer": "金沢せんべい" },
+                { "question": "石川県で有名な祭りは何ですか？", "answer": "金沢百万石まつり" },
+                { "question": "石川県の名産お酒は何ですか？", "answer": "加賀梅酒" },
+                { "question": "石川県の名物スイーツは何ですか？", "answer": "加賀棒茶" },
+                { "question": "石川県の有名な山は何ですか？", "answer": "白山" }
+            ],
+            "福井県": [
+                { "question": "福井県の名物は何ですか？", "answer": "越前ガニ" },
+                { "question": "福井県の観光名所はどこですか？", "answer": "永平寺" },
+                { "question": "福井県の県庁所在地はどこですか？", "answer": "福井市" },
+                { "question": "福井県の「福井県立恐竜博物館」で有名な恐竜は何ですか？", "answer": "フクイラプトル" },
+                { "question": "福井県の特産品は何ですか？", "answer": "若狭牛" },
+                { "question": "福井県の有名な山は何ですか？", "answer": "恐竜山" },
+                { "question": "福井県で有名な祭りは何ですか？", "answer": "福井まつり" },
+                { "question": "福井県の名産お酒は何ですか？", "answer": "福井の酒" },
+                { "question": "福井県の名物スイーツは何ですか？", "answer": "羽二重餅" }
+            ],
+            "山梨県": [
+                { "question": "山梨県の名物は何ですか？", "answer": "ほうとう" },
+                { "question": "山梨県の観光名所はどこですか？", "answer": "富士山" },
+                { "question": "山梨県の県庁所在地はどこですか？", "answer": "甲府市" },
+                { "question": "山梨県の有名な温泉地はどこですか？", "answer": "甲府温泉" },
+                { "question": "山梨県の特産品は何ですか？", "answer": "ぶどう" },
+                { "question": "山梨県の名産果物は何ですか？", "answer": "桃" },
+                { "question": "山梨県で有名な祭りは何ですか？", "answer": "甲府まつり" },
+                { "question": "山梨県の名物お酒は何ですか？", "answer": "甲州ワイン" },
+                { "question": "山梨県の有名な山は何ですか？", "answer": "富士山" }
+            ],
+            "長野県": [
+                { "question": "長野県の名物は何ですか？", "answer": "おやき" },
+                { "question": "長野県の観光名所はどこですか？", "answer": "松本城" },
+                { "question": "長野県の県庁所在地はどこですか？", "answer": "長野市" },
+                { "question": "長野県の有名な温泉地はどこですか？", "answer": "野沢温泉" },
+                { "question": "長野県の特産品は何ですか？", "answer": "野沢菜" },
+                { "question": "長野県で有名な祭りは何ですか？", "answer": "善光寺の御開帳" },
+                { "question": "長野県の名産果物は何ですか？", "answer": "リンゴ" },
+                { "question": "長野県の名物お酒は何ですか？", "answer": "信州の酒" },
+                { "question": "長野県の有名な山は何ですか？", "answer": "白馬岳" }
+            ],
+            "岐阜県": [
+                { "question": "岐阜県の名物は何ですか？", "answer": "飛騨牛" },
+                { "question": "岐阜県の観光名所はどこですか？", "answer": "高山" },
+                { "question": "岐阜県の県庁所在地はどこですか？", "answer": "岐阜市" },
+                { "question": "岐阜県の有名な温泉地はどこですか？", "answer": "下呂温泉" },
+                { "question": "岐阜県の特産品は何ですか？", "answer": "飛騨高山の漬物" },
+                { "question": "岐阜県の有名な山は何ですか？", "answer": "飛騨高山" },
+                { "question": "岐阜県で有名な祭りは何ですか？", "answer": "高山祭り" },
+                { "question": "岐阜県の名産お酒は何ですか？", "answer": "岐阜の酒" },
+                { "question": "岐阜県の名物スイーツは何ですか？", "answer": "栗きんとん" }
+            ],
+            "静岡県": [
+                { "question": "静岡県の名物は何ですか？", "answer": "お茶" },
+                { "question": "静岡県の観光名所はどこですか？", "answer": "富士山" },
+                { "question": "静岡県の県庁所在地はどこですか？", "answer": "静岡市" },
+                { "question": "静岡県の有名な温泉地はどこですか？", "answer": "熱海温泉" },
+                { "question": "静岡県の特産品は何ですか？", "answer": "静岡茶" },
+                { "question": "静岡県で有名な祭りは何ですか？", "answer": "静岡まつり" },
+                { "question": "静岡県の名産お酒は何ですか？", "answer": "静岡の酒" },
+                { "question": "静岡県の名物スイーツは何ですか？", "answer": "静岡みかん" },
+                { "question": "静岡県の有名な山は何ですか？", "answer": "富士山" }
+            ],
+
+            "愛知県": [
+                { "question": "愛知県の名物は何ですか？", "answer": "ひつまぶし" },
+                { "question": "愛知県の観光名所はどこですか？", "answer": "名古屋城" },
+                { "question": "愛知県の県庁所在地はどこですか？", "answer": "名古屋市" },
+                { "question": "愛知県の特産品は何ですか？", "answer": "名古屋コーチン" },
+                { "question": "愛知県の有名な温泉地はどこですか？", "answer": "湯の山温泉" },
+                { "question": "愛知県で有名な祭りは何ですか？", "answer": "名古屋まつり" },
+                { "question": "愛知県の名産お酒は何ですか？", "answer": "名古屋の酒" },
+                { "question": "愛知県の名物スイーツは何ですか？", "answer": "ういろう" },
+                { "question": "愛知県で有名な山は何ですか？", "answer": "鈴鹿山脈" }
+            ],
+            "三重県": [
+                { "question": "三重県の名物は何ですか？", "answer": "松坂牛" },
+                { "question": "三重県の観光名所はどこですか？", "answer": "伊勢神宮" },
+                { "question": "三重県の県庁所在地はどこですか？", "answer": "津市" },
+                { "question": "三重県の特産品は何ですか？", "answer": "伊勢エビ" },
+                { "question": "三重県の有名な温泉地はどこですか？", "answer": "鳥羽温泉" },
+                { "question": "三重県の名産果物は何ですか？", "answer": "みかん" },
+                { "question": "三重県で有名な祭りは何ですか？", "answer": "松阪まつり" },
+                { "question": "三重県の名物スイーツは何ですか？", "answer": "赤福" },
+                { "question": "三重県の名産お酒は何ですか？", "answer": "伊勢の酒" }
+            ],
+            "滋賀県": [
+                { "question": "滋賀県の名物は何ですか？", "answer": "近江牛" },
+                { "question": "滋賀県の観光名所はどこですか？", "answer": "彦根城" },
+                { "question": "滋賀県の県庁所在地はどこですか？", "answer": "大津市" },
+                { "question": "滋賀県の特産品は何ですか？", "answer": "鮒寿司" },
+                { "question": "滋賀県の有名な温泉地はどこですか？", "answer": "長浜温泉" },
+                { "question": "滋賀県で有名な祭りは何ですか？", "answer": "長浜曳山祭" },
+                { "question": "滋賀県の名産果物は何ですか？", "answer": "近江みかん" },
+                { "question": "滋賀県の名物スイーツは何ですか？", "answer": "近江大津プリン" },
+                { "question": "滋賀県の名産お酒は何ですか？", "answer": "滋賀の酒" }
+            ],
+            "京都府": [
+                { "question": "京都府の名物は何ですか？", "answer": "京料理" },
+                { "question": "京都府の観光名所はどこですか？", "answer": "金閣寺" },
+                { "question": "京都府の県庁所在地はどこですか？", "answer": "京都市" },
+                { "question": "京都府の特産品は何ですか？", "answer": "京漬物" },
+                { "question": "京都府の有名な温泉地はどこですか？", "answer": "湯の花温泉" },
+                { "question": "京都府で有名な祭りは何ですか？", "answer": "祇園祭" },
+                { "question": "京都府の名物スイーツは何ですか？", "answer": "八つ橋" },
+                { "question": "京都府の名産お酒は何ですか？", "answer": "伏見の酒" },
+                { "question": "京都府の有名な山は何ですか？", "answer": "比叡山" }
+            ],
+            "大阪府": [
+                { "question": "大阪府の名物は何ですか？", "answer": "たこ焼き" },
+                { "question": "大阪府の観光名所はどこですか？", "answer": "大阪城" },
+                { "question": "大阪府の県庁所在地はどこですか？", "answer": "大阪市" },
+                { "question": "大阪府の特産品は何ですか？", "answer": "大阪ビール" },
+                { "question": "大阪府の有名な温泉地はどこですか？", "answer": "有馬温泉" },
+                { "question": "大阪府で有名な祭りは何ですか？", "answer": "天神祭" },
+                { "question": "大阪府の名物スイーツは何ですか？", "answer": "大阪カステラ" },
+                { "question": "大阪府の名産お酒は何ですか？", "answer": "伏見の酒" },
+                { "question": "大阪府の有名な山は何ですか？", "answer": "金剛山" }
+            ],
+            "兵庫県": [
+                { "question": "兵庫県の名物は何ですか？", "answer": "神戸牛" },
+                { "question": "兵庫県の観光名所はどこですか？", "answer": "姫路城" },
+                { "question": "兵庫県の県庁所在地はどこですか？", "answer": "神戸市" },
+                { "question": "兵庫県の特産品は何ですか？", "answer": "明石ダコ" },
+                { "question": "兵庫県の有名な温泉地はどこですか？", "answer": "有馬温泉" },
+                { "question": "兵庫県で有名な祭りは何ですか？", "answer": "姫路お城まつり" },
+                { "question": "兵庫県の名物スイーツは何ですか？", "answer": "神戸プリン" },
+                { "question": "兵庫県の名産お酒は何ですか？", "answer": "播磨の酒" },
+                { "question": "兵庫県の有名な山は何ですか？", "answer": "六甲山" }
+            ],
+            "奈良県": [
+                { "question": "奈良県の名物は何ですか？", "answer": "奈良漬" },
+                { "question": "奈良県の観光名所はどこですか？", "answer": "東大寺" },
+                { "question": "奈良県の県庁所在地はどこですか？", "answer": "奈良市" },
+                { "question": "奈良県の特産品は何ですか？", "answer": "大和茶" },
+                { "question": "奈良県の有名な温泉地はどこですか？", "answer": "奈良温泉" },
+                { "question": "奈良県で有名な祭りは何ですか？", "answer": "奈良祭り" },
+                { "question": "奈良公園で有名な動物は何ですか？", "answer": "鹿" },
+                { "question": "奈良県の名産お酒は何ですか？", "answer": "奈良の酒" },
+                { "question": "奈良県の有名な山は何ですか？", "answer": "春日山" }
+            ],
+
+            "和歌山県": [
+                { "question": "和歌山県の名物は何ですか？", "answer": "紀州梅" },
+                { "question": "和歌山県の観光名所はどこですか？", "answer": "熊野古道" },
+                { "question": "和歌山県の県庁所在地はどこですか？", "answer": "和歌山市" },
+                { "question": "和歌山県の特産品は何ですか？", "answer": "紀州南高梅" },
+                { "question": "和歌山県の有名な温泉地はどこですか？", "answer": "白浜温泉" },
+                { "question": "和歌山県で有名な祭りは何ですか？", "answer": "和歌山マラソン" },
+                { "question": "和歌山県の名産果物は何ですか？", "answer": "みかん" },
+                { "question": "和歌山県の名物スイーツは何ですか？", "answer": "梅干しアイス" },
+                { "question": "和歌山県の名産お酒は何ですか？", "answer": "紀州梅酒" }
+            ],
+            "鳥取県": [
+                { "question": "鳥取県の名物は何ですか？", "answer": "鳥取砂丘らっきょう" },
+                { "question": "鳥取県の観光名所はどこですか？", "answer": "鳥取砂丘" },
+                { "question": "鳥取県の県庁所在地はどこですか？", "answer": "鳥取市" },
+                { "question": "鳥取県の特産品は何ですか？", "answer": "梨" },
+                { "question": "鳥取県の有名な温泉地はどこですか？", "answer": "湯村温泉" },
+                { "question": "鳥取県で有名な食べ物「カニ」は、どんなカニが特に有名ですか？", "answer": "ズワイガニ" },
+                { "question": "鳥取県の名物スイーツは何ですか？", "answer": "二十世紀梨のゼリー" },
+                { "question": "鳥取県の名産お酒は何ですか？", "answer": "鳥取の酒" },
+                { "question": "鳥取県の有名な山は何ですか？", "answer": "大山" }
+            ],
+            "島根県": [
+                { "question": "島根県の名物は何ですか？", "answer": "出雲そば" },
+                { "question": "島根県の観光名所はどこですか？", "answer": "出雲大社" },
+                { "question": "島根県の県庁所在地はどこですか？", "answer": "松江市" },
+                { "question": "島根県の特産品は何ですか？", "answer": "松江の和菓子" },
+                { "question": "島根県の「石見銀山」は、何の産地として有名ですか？", "answer": "銀" },
+                { "question": "島根県で有名な祭りは何ですか？", "answer": "出雲大社の秋祭り" },
+                { "question": "島根県の名産果物は何ですか？", "answer": "梨" },
+                { "question": "島根県の名物スイーツは何ですか？", "answer": "出雲大社の焼き団子" },
+                { "question": "島根県の名産お酒は何ですか？", "answer": "出雲の酒" }
+            ],
+            "岡山県": [
+                { "question": "岡山県の名物は何ですか？", "answer": "岡山白桃" },
+                { "question": "岡山県の観光名所はどこですか？", "answer": "岡山城" },
+                { "question": "岡山県の県庁所在地はどこですか？", "answer": "岡山市" },
+                { "question": "岡山県の特産品は何ですか？", "answer": "白桃" },
+                { "question": "岡山県の有名な温泉地はどこですか？", "answer": "湯郷温泉" },
+                { "question": "岡山県で有名な祭りは何ですか？", "answer": "岡山桃太郎まつり" },
+                { "question": "岡山県の名産スイーツは何ですか？", "answer": "きびだんご" },
+                { "question": "岡山県の名産お酒は何ですか？", "answer": "岡山の酒" },
+                { "question": "岡山県の有名な山は何ですか？", "answer": "大山" }
+            ],
+            "広島県": [
+                { "question": "広島県の名物は何ですか？", "answer": "広島風お好み焼き" },
+                { "question": "広島県の観光名所はどこですか？", "answer": "厳島神社" },
+                { "question": "広島県の県庁所在地はどこですか？", "answer": "広島市" },
+                { "question": "広島県の特産品は何ですか？", "answer": "カキ" },
+                { "question": "広島県の有名な温泉地はどこですか？", "answer": "湯来温泉" },
+                { "question": "広島県で有名な祭りは何ですか？", "answer": "広島平和記念式典" },
+                { "question": "広島県の名産スイーツは何ですか？", "answer": "もみじ饅頭" },
+                { "question": "広島県の名産お酒は何ですか？", "answer": "広島の酒" },
+                { "question": "広島県の有名な山は何ですか？", "answer": "宮島" }
+            ],
+            "山口県": [
+                { "question": "山口県の名物は何ですか？", "answer": "ふぐ" },
+                { "question": "山口県の観光名所はどこですか？", "answer": "錦帯橋" },
+                { "question": "山口県の県庁所在地はどこですか？", "answer": "山口市" },
+                { "question": "山口県の特産品は何ですか？", "answer": "フグ" },
+                { "question": "山口県の有名な温泉地はどこですか？", "answer": "下関温泉" },
+                { "question": "山口県で有名な祭りは何ですか？", "answer": "山口灯篭まつり" },
+                { "question": "山口県の名産スイーツは何ですか？", "answer": "ふぐ料理" },
+                { "question": "山口県の名産お酒は何ですか？", "answer": "山口の酒" },
+                { "question": "山口県の有名な山は何ですか？", "answer": "長門山" }
+            ],
+            "香川県": [
+                { "question": "香川県の名物は何ですか？", "answer": "うどん" },
+                { "question": "香川県の観光名所はどこですか？", "answer": "高松城" },
+                { "question": "香川県の県庁所在地はどこですか？", "answer": "高松市" },
+                { "question": "香川県の「小豆島」で有名な特産品は何ですか", "answer": "オリーブ" },
+                { "question": "香川県の「県の鳥」は？", "answer": "ホトトギス" },
+                { "question": "香川県の「県の魚」は？", "answer": "ハマチ" },
+                { "question": "香川県の「県の獣」は？", "answer": "鹿" },
+                { "question": "香川県の名産お酒は何ですか？", "answer": "悦凱陣" },
+                { "question": "香川県の有名な山は何ですか？", "answer": "飯野山" }
+            ], "高知県": [
+                { "question": "高知県の名物は何ですか？", "answer": "かつおのたたき" },
+                { "question": "高知県の観光名所はどこですか？", "answer": "桂浜" },
+                { "question": "高知県の県庁所在地はどこですか？", "answer": "高知市" },
+                { "question": "高知県の特産品は何ですか？", "answer": "柚" },
+                { "question": "高知県で行われる有名な夏祭りは？", "answer": "よさこい祭り" },
+                { "question": "高知県のシンボルとも言える歴史上の人物は？", "answer": "坂本龍馬" },
+                { "question": "高知県で「日本最後の清流」とも称される川は？", "answer": "四万十川" },
+                { "question": "高知県の名産お酒は何ですか？", "answer": "亀泉" },
+                { "question": "高知県の有名な山は何ですか？", "answer": "三嶺" }
+            ], "徳島県": [
+                { "question": "徳島県の名物は何ですか？", "answer": "すだち" },
+                { "question": "徳島県の観光名所はどこですか？", "answer": "祖谷のかずら橋" },
+                { "question": "徳島県の県庁所在地はどこですか？", "answer": "徳島市" },
+                { "question": "徳島県の特産品は何ですか？", "answer": "鳴門金時" },
+                { "question": "徳島県で有名な夏の伝統的な踊りは？", "answer": "阿波おどり" },
+                { "question": "渦潮が見られることで有名な海峡は？", "answer": "鳴門海峡" },
+                { "question": "徳島県発祥のキャラクターで、すだちをモチーフにしたのは？", "answer": "すだちくん" },
+                { "question": "徳島県の名産お酒は何ですか？", "answer": "鳴門鯛純米酒" },
+                { "question": "徳島県の有名な山は何ですか？", "answer": "剣山" }
+            ], "愛媛県": [
+                { "question": "愛媛県の名物は何ですか？", "answer": "みかん" },
+                { "question": "愛媛県の観光名所はどこですか？", "answer": "道後温泉" },
+                { "question": "愛媛県の県庁所在地はどこですか？", "answer": "松山市" },
+                { "question": "愛媛県の特産品は何ですか？", "answer": "坊ちゃん団子" },
+                { "question": "愛媛県よく食べられれる食べ物は何ですか？", "answer": "鯛飯" },
+                { "question": "愛媛県の有名なキャラクターは？", "answer": "みきゃん" },
+                { "question": "愛媛の有名な動物は？", "answer": "ニホンカワウソ" },
+                { "question": "愛媛県の名産お酒は何ですか？", "answer": "石鎚" },
+                { "question": "愛媛県の有名な山は何ですか？", "answer": "石鎚山" }
+            ],
+            "福岡県": [
+                { "question": "福岡県の名物は何ですか？", "answer": "博多ラーメン" },
+                { "question": "福岡県の観光名所はどこですか？", "answer": "福岡タワー" },
+                { "question": "福岡県の県庁所在地はどこですか？", "answer": "福岡市" },
+                { "question": "福岡県の特産品は何ですか？", "answer": "明太子" },
+                { "question": "福岡県の有名な温泉地はどこですか？", "answer": "博多温泉" },
+                { "question": "福岡県で有名な祭りは何ですか？", "answer": "博多祇園山笠" },
+                { "question": "福岡県の名産果物は何ですか？", "answer": "あまおう" },
+                { "question": "福岡県の名物スイーツは何ですか？", "answer": "博多通りもん" },
+                { "question": "福岡県の名産お酒は何ですか？", "answer": "博多の焼酎" }
+            ],
+            "佐賀県": [
+                { "question": "佐賀県の名物は何ですか？", "answer": "佐賀牛" },
+                { "question": "佐賀県の観光名所はどこですか？", "answer": "有田焼" },
+                { "question": "佐賀県の県庁所在地はどこですか？", "answer": "佐賀市" },
+                { "question": "佐賀県の特産品は何ですか？", "answer": "いちご" },
+                { "question": "佐賀県の有名な温泉地はどこですか？", "answer": "嬉野温泉" },
+                { "question": "佐賀県で有名な祭りは何ですか？", "answer": "佐賀バルーンフェスタ" },
+                { "question": "佐賀県の名産スイーツは何ですか？", "answer": "佐賀錦" },
+                { "question": "佐賀県の名産お酒は何ですか？", "answer": "佐賀の酒" },
+                { "question": "佐賀県の有名な山は何ですか？", "answer": "天山" }
+            ],
+            "長崎県": [
+                { "question": "長崎県の名物は何ですか？", "answer": "ちゃんぽん" },
+                { "question": "長崎県の観光名所はどこですか？", "answer": "グラバー園" },
+                { "question": "長崎県の県庁所在地はどこですか？", "answer": "長崎市" },
+                { "question": "長崎県の特産品は何ですか？", "answer": "カステラ" },
+                { "question": "長崎県の有名な温泉地はどこですか？", "answer": "雲仙温泉" },
+                { "question": "長崎県で有名な祭りは何ですか？", "answer": "長崎くんち" },
+                { "question": "長崎県の名産果物は何ですか？", "answer": "みかん" },
+                { "question": "長崎県の名物スイーツは何ですか？", "answer": "長崎カステラ" },
+                { "question": "長崎県の名産お酒は何ですか？", "answer": "長崎の焼酎" }
+            ],
+            "熊本県": [
+                { "question": "熊本県の名物は何ですか？", "answer": "馬刺し" },
+                { "question": "熊本県の観光名所はどこですか？", "answer": "熊本城" },
+                { "question": "熊本県の県庁所在地はどこですか？", "answer": "熊本市" },
+                { "question": "熊本県の山といえば？", "answer": "阿蘇山" },
+                { "question": "熊本県の有名な温泉地はどこですか？", "answer": "黒川温泉" },
+                { "question": "熊本県で有名な祭りは何ですか？", "answer": "熊本城まつり" },
+                { "question": "熊本県の名産果物は何ですか？", "answer": "スイカ" },
+                { "question": "熊本のマスコットキャラクターといえば？", "answer": "くまモン" },
+                { "question": "熊本県の名産お酒は何ですか？", "answer": "熊本の焼酎" }
+            ],
+            "大分県": [
+                { "question": "大分県の名物は何ですか？", "answer": "とり天" },
+                { "question": "大分県の観光名所はどこですか？", "answer": "別府温泉" },
+                { "question": "大分県の県庁所在地はどこですか？", "answer": "大分市" },
+                { "question": "大分県の特産品は何ですか？", "answer": "かぼす" },
+                { "question": "大分県の観光地「高崎山」は、どんな動物がたくさんいますか？", "answer": "サル" },
+                { "question": "大分県で有名な祭りは何ですか？", "answer": "大分夏まつり" },
+                { "question": "大分県の名産果物は何ですか？", "answer": "カボス" },
+                { "question": "大分県の名物スイーツは何ですか？", "answer": "別府地獄プリン" },
+                { "question": "大分県の名産お酒は何ですか？", "answer": "大分の焼酎" }
+            ],
+            "宮崎県": [
+                { "question": "宮崎県の名物は何ですか？", "answer": "宮崎牛" },
+                { "question": "宮崎県の観光名所はどこですか？", "answer": "高千穂峡" },
+                { "question": "宮崎県の県庁所在地はどこですか？", "answer": "宮崎市" },
+                { "question": "宮崎県の特産品は何ですか？", "answer": "マンゴー" },
+                { "question": "宮崎県の有名な温泉地はどこですか？", "answer": "青島温泉" },
+                { "question": "宮崎県で有名な祭りは何ですか？", "answer": "宮崎平和市民まつり" },
+                { "question": "宮崎県の名産果物は何ですか？", "answer": "マンゴー" },
+                { "question": "宮崎県の名物スイーツは何ですか？", "answer": "宮崎マンゴーゼリー" },
+                { "question": "宮崎県の名産お酒は何ですか？", "answer": "宮崎の焼酎" }
+            ],
+            "鹿児島県": [
+                { "question": "鹿児島県の名物は何ですか？", "answer": "黒豚" },
+                { "question": "鹿児島県の観光名所はどこですか？", "answer": "桜島" },
+                { "question": "鹿児島県の県庁所在地はどこですか？", "answer": "鹿児島市" },
+                { "question": "鹿児島県の特産品は何ですか？", "answer": "さつま揚げ" },
+                { "question": "鹿児島県の名物「黒糖」は、何から作られますか？", "answer": "サトウキビ" },
+                { "question": "鹿児島県で有名な祭りは何ですか？", "answer": "おはら祭り" },
+                { "question": "鹿児島県の名産果物は何ですか？", "answer": "枕崎のメロン" },
+                { "question": "鹿児島県の名物スイーツは何ですか？", "answer": "かるかん" },
+                { "question": "鹿児島県の名産お酒は何ですか？", "answer": "黒霧島" }
+            ],
+            "沖縄県": [
+                { "question": "沖縄県の名物は何ですか？", "answer": "沖縄そば" },
+                { "question": "沖縄県の観光名所はどこですか？", "answer": "首里城" },
+                { "question": "沖縄県の県庁所在地はどこですか？", "answer": "那覇市" },
+                { "question": "沖縄県の特産品は何ですか？", "answer": "ゴーヤ" },
+                { "question": "沖縄県の有名な温泉地はどこですか？", "answer": "沖縄温泉" },
+                { "question": "沖縄県で有名な祭りは何ですか？", "answer": "沖縄伝統芸能まつり" },
+                { "question": "沖縄県の名産果物は何ですか？", "answer": "パイナップル" },
+                { "question": "沖縄県の名物スイーツは何ですか？", "answer": "ちんすこう" },
+                { "question": "沖縄県の名産お酒は何ですか？", "answer": "泡盛" }
+            ]
+        }
+
+
+        let currentQuestionIndex = 0;
+        const questions = questionsByPrefecture[prefecture] || [];
+        let correctAnswers = 0;
+
+        // 問題の表示
+        function showNextQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                document.getElementById('questionContainer').innerHTML = `
+          <p>${question.question}</p>
+          <input type="text" id="answerInput" placeholder="答えを入力">
+          <button onclick="checkAnswer()">回答</button>
+        `;
+            } else {
+                document.getElementById('questionContainer').innerHTML = '<p>全ての問題が終了しました！</p>';
+                document.getElementById('gotoPuzzle').addEventListener('click', () => {
+                    const prefecture = encodeURIComponent(urlParams.get('prefecture'));
+                    const imageUrl = encodeURIComponent(urlParams.get('image'));
+                    window.location.href = `pazuru.html?prefecture=${prefecture}&image=${imageUrl}`;
+                });
+            }
+        }
+
+
+
+        // 正誤判定
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answerInput').value;
+            if (userAnswer === questions[currentQuestionIndex].answer) {
+                alert('正解です！');
+                correctAnswers++;
+                // 正解したら、パズルピースを表示
+                document.getElementById(`puzzle-piece-${correctAnswers}`).classList.remove('hidden');
+                currentQuestionIndex++; // 正解した場合のみ次の質問に進む
+                showNextQuestion();
+            } else {
+                alert('不正解です！');
+            }
+        }
+
+        // パズルのピースを表示
+        function setupPuzzle() {
+            const puzzleContainer = document.getElementById('puzzle');
+            const pieces = 9;
+            for (let i = 0; i < pieces; i++) {
+                const puzzlePiece = document.createElement('div');
+                puzzlePiece.classList.add('puzzle-piece', 'hidden');
+                puzzlePiece.id = `puzzle-piece-${i + 1}`;
+
+                // 画像を9ピースに分割する設定
+                puzzlePiece.style.backgroundImage = `url(${imageUrl})`;
+                puzzlePiece.style.backgroundPosition = `${(i % 3) * -100}px ${(Math.floor(i / 3)) * -100}px`;
+
+                puzzleContainer.appendChild(puzzlePiece);
+            }
+        }
+
+        // ページ読み込み時にパズルをセットアップ
+        document.getElementById('prefectureName').textContent = `${prefecture} の問題です`;
+        setupPuzzle();
+        showNextQuestion();
+
+
+
+
+    </script>
+    <button class="button" onclick="window.location.href='kotae.html'">答え</button>
+
+</body>
+
+</html>
